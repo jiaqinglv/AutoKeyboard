@@ -7,6 +7,8 @@ use const_gen::*;
 use xz2::read::XzEncoder;
 
 fn main() {
+    check_wifi_credentials();
+
     // Generate vial config at the root of project
     println!("cargo:rerun-if-changed=vial.json");
     generate_vial_config();
@@ -15,6 +17,22 @@ fn main() {
 
     // Set the extra linker script from defmt
     // println!("cargo:rustc-link-arg=-Tdefmt.x");
+}
+
+/// `src/wifi_credentials.rs` is git-ignored, so a fresh clone won't have it.
+/// `include!` would then fail with a bare "couldn't read file" error, so give
+/// the user something actionable instead.
+fn check_wifi_credentials() {
+    println!("cargo:rerun-if-changed=src/wifi_credentials.rs");
+
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/wifi_credentials.rs");
+    if !path.exists() {
+        panic!(
+            "\n\n💡 `src/wifi_credentials.rs` not found.\n\
+             Copy the template and fill in your Wi-Fi credentials:\n\n\
+             cp src/wifi_credentials.rs.example src/wifi_credentials.rs\n\n"
+        );
+    }
 }
 
 fn generate_vial_config() {

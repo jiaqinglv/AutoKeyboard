@@ -50,8 +50,10 @@ extern crate alloc;
 
 ::esp_bootloader_esp_idf::esp_app_desc!();
 
-const WIFI_SSID: &str = "x";
-const WIFI_PASSWORD: &str = "x";
+// Wi-Fi credentials live in `src/wifi_credentials.rs`, which is git-ignored.
+// `include!` bakes them into the binary at compile time.
+// Copy `src/wifi_credentials.rs.example` there and fill in your own values.
+include!("wifi_credentials.rs");
 
 #[esp_rtos::main]
 async fn main(spawner: Spawner) {

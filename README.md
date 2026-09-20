@@ -43,6 +43,13 @@ cargo install cargo-espflash espflash
 
 ## 构建与烧录
 
+首次克隆后必须先创建 WiFi 凭证文件，否则 `build.rs` 会直接报错终止（见下文「WiFi 账号密码」）：
+
+```bash
+cp src/wifi_credentials.rs.example src/wifi_credentials.rs
+# 然后编辑 src/wifi_credentials.rs 填入真实 SSID 与密码
+```
+
 ```bash
 # 编译并烧录、打开串口监视器
 cargo run --release
@@ -68,12 +75,21 @@ espsegs target/xtensa-esp32s3-none-elf/release/AutoKeyboard --chip esp32s3
 
 ### 1. WiFi 账号密码
 
-`src/main.rs` 中的常量目前是占位符，烧录前必须替换为真实的 SSID 与密码：
+凭证放在 `src/wifi_credentials.rs`，该文件**已被 `.gitignore` 忽略**，不会进入仓库。`src/main.rs` 通过 `include!` 引入，值在编译期内联进固件（不读运行时文件）：
 
 ```rust
-const WIFI_SSID: &str = "x";
-const WIFI_PASSWORD: &str = "x";
+// src/wifi_credentials.rs（本地文件，不要提交）
+const WIFI_SSID: &str = "your-ssid";
+const WIFI_PASSWORD: &str = "your-password";
 ```
+
+新克隆的仓库只有模板文件 `src/wifi_credentials.rs.example`，先复制再填：
+
+```bash
+cp src/wifi_credentials.rs.example src/wifi_credentials.rs
+```
+
+若该文件缺失，`build.rs` 会在编译开始时就打印提示并终止，而不是抛出晦涩的 `include!` 报错。
 
 设备只会连接扫描结果中与 `WIFI_SSID` 完全一致的 AP。
 
@@ -145,7 +161,7 @@ client.publish("keyboard/auto", payload, qos=0)
 
 ```
 .
-├── build.rs          # 编译期生成 Vial 配置（压缩 vial.json + keyboard id）
+├── build.rs          # 校验 WiFi 凭证文件存在，并生成 Vial 配置
 ├── vial.json         # Vial 布局描述（矩阵尺寸、物理布局）
 ├── Cargo.toml        # 依赖与编译 profile
 └── src/
@@ -153,7 +169,9 @@ client.publish("keyboard/auto", payload, qos=0)
     ├── keymap.rs     # 矩阵尺寸、HID 键值 ↔ 矩阵坐标映射表、默认键位
     ├── mqtt.rs       # MQTT 客户端任务：连接、订阅、解析报文并注入按键事件
     ├── vial.rs       # 引入 build.rs 生成的 Vial 配置
-    └── macros.rs     # 矩阵引脚配置等宏
+    ├── macros.rs     # 矩阵引脚配置等宏
+    ├── wifi_credentials.rs.example  # WiFi 凭证模板（检入仓库）
+    └── wifi_credentials.rs          # 真实凭证（本地文件，已被 .gitignore 忽略）
 ```
 
 ## 依赖说明
@@ -165,7 +183,7 @@ client.publish("keyboard/auto", payload, qos=0)
 
 ## 后续计划
 
-- [ ] WiFi 凭证与 MQTT 配置改为运行时可配（Vial 或存储区内），不再硬编码
+- [ ] WiFi 凭证与 MQTT 配置改为运行时可配（Vial 或存储区内）；目前凭证虽已移出仓库，但仍是编译期内联，换网络需重新烧录
 - [ ] MQTT 报文支持 `msg_id` 去重与 QoS 1
 - [ ] 补全 Vial 布局描述，与实际 6×17 键盘匹配
 - [ ] 增加 BLE 无线模式（相关代码已在 `main.rs` 中注释保留）
